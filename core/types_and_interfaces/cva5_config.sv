@@ -342,6 +342,100 @@ package cva5_config;
         WB_GROUP : EXAMPLE_WB_GROUP_CONFIG
     };
 
+    // ------------------------------------------------------------
+    // It's a Verilator bring-up configuration:
+    // Use local memories instead of caches for deterministic sim
+    // ------------------------------------------------------------
+    localparam cpu_config_t SIM_CONFIG = '{
+        // ISA options (same as EXAMPLE_CONFIG)
+        MODES : MSU,
+        INCLUDE_UNIT : '{
+            MUL : 1,
+            DIV : 1,
+            CSR : 1,
+            FPU : 1,
+            CUSTOM : 0,
+            default: '0
+        },
+        INCLUDE_IFENCE : 1,
+        INCLUDE_AMO : 0,
+        INCLUDE_CBO : 0,
+
+        // CSR constants
+        CSRS : '{
+            MACHINE_IMPLEMENTATION_ID : 0,
+            CPU_ID : 0,
+            RESET_VEC : 32'h80000000,
+            RESET_TVEC : 32'h00000000,
+            MCONFIGPTR : '0,
+            INCLUDE_ZICNTR : 1,
+            INCLUDE_ZIHPM : 1,
+            INCLUDE_SSTC : 1,
+            INCLUDE_SMSTATEEN : 1
+        },
+
+        // Memory options (turn caches OFF, local mem ON)
+        SQ_DEPTH : 4,
+        INCLUDE_FORWARDING_TO_STORES : 1,
+        AMO_UNIT : '{
+            LR_WAIT : 32,
+            RESERVATION_WORDS : 8
+        },
+
+        INCLUDE_ICACHE : 0,
+        ICACHE_ADDR : '{
+            L: 32'h80000000,
+            H: 32'h8FFFFFFF
+        },
+        ICACHE : EXAMPLE_CONFIG.ICACHE,
+        ITLB : EXAMPLE_CONFIG.ITLB,
+
+        INCLUDE_DCACHE : 0,
+        DCACHE_ADDR : '{
+            L: 32'h80000000,
+            H: 32'h8FFFFFFF
+        },
+        DCACHE : EXAMPLE_CONFIG.DCACHE,
+        DTLB : EXAMPLE_CONFIG.DTLB,
+
+        INCLUDE_ILOCAL_MEM : 1,
+        ILOCAL_MEM_ADDR : '{
+            L : 32'h80000000,
+            H : 32'h8FFFFFFF
+        },
+
+        INCLUDE_DLOCAL_MEM : 1,
+        DLOCAL_MEM_ADDR : '{
+            L : 32'h80000000,
+            H : 32'h8FFFFFFF
+        },
+
+        INCLUDE_IBUS : 0,
+        IBUS_ADDR : '{
+            L : 32'h60000000,
+            H : 32'h6FFFFFFF
+        },
+
+        INCLUDE_PERIPHERAL_BUS : 1,
+        PERIPHERAL_BUS_ADDR : '{
+            L : 32'h60000000,
+            H : 32'h6FFFFFFF
+        },
+        PERIPHERAL_BUS_TYPE : AXI_BUS,
+
+        // Branch predictor options (same)
+        INCLUDE_BRANCH_PREDICTOR : 1,
+        BP : '{
+            WAYS : 2,
+            ENTRIES : 512,
+            RAS_ENTRIES : 8
+        },
+
+        // Writeback options (same)
+        NUM_WB_GROUPS : 3,
+        WB_GROUP : EXAMPLE_WB_GROUP_CONFIG
+    };
+
 
     ////////////////////////////////////////////////////
     //ID limit

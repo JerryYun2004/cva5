@@ -116,7 +116,8 @@ module cva5_sim
 
     ////////////////////////////////////////////////////
     //CPU instantiation and mapping
-    cva5 #(.CONFIG(EXAMPLE_CONFIG)) cpu(.mem(mem[0]), .*);
+    // Use the SIM_CONFIG defined in cva5_config.sv (tool-friendly, no struct-copy tricks)
+    cva5 #(.CONFIG(SIM_CONFIG)) cpu(.mem(mem[0]), .*);
     axi_adapter #(.NUM_CORES(1)) arb(.mems(mem), .axi(axi), .*);
 
     //Local memory port mapping
@@ -295,13 +296,13 @@ module cva5_sim
             rd_addr_table[`ISSUE_P.issue.rd_addr] <= `ISSUE_P.unit_needed_issue_stage;
     end
 
-    generate if (EXAMPLE_CONFIG.INCLUDE_ICACHE) begin
+    generate if (SIM_CONFIG.INCLUDE_ICACHE) begin
         assign icache_hit = `ICACHE_P.tag_hit;
         assign icache_miss = `ICACHE_P.second_cycle & ~`ICACHE_P.tag_hit;
         assign iarb_stall = `ICACHE_P.request_r & ~cpu.icache_mem.ack;
     end endgenerate
 
-    generate if (EXAMPLE_CONFIG.INCLUDE_DCACHE) begin
+    generate if (SIM_CONFIG.INCLUDE_DCACHE) begin
         //Depends on data cache type; not enabled for now
         // assign dcache_hit = `DCACHE_P.load_hit;
         // assign dcache_miss = `DCACHE_P.line_complete;
@@ -394,18 +395,18 @@ module cva5_sim
     ////////////////////////////////////////////////////
     //Performs the lookups to provide the speculative architectural register file with
     //standard register names for simulation purposes
-    logic [31:0][31:0] sim_registers_unamed_groups[EXAMPLE_CONFIG.NUM_WB_GROUPS];
+    logic [31:0][31:0] sim_registers_unamed_groups[SIM_CONFIG.NUM_WB_GROUPS];
     logic [31:0][31:0] sim_registers_unamed;
 
     simulation_named_regfile sim_register;
     typedef struct packed{
         phys_addr_t phys_addr;
-        logic [$clog2(EXAMPLE_CONFIG.NUM_WB_GROUPS)-1:0] wb_group;
+        logic [$clog2(SIM_CONFIG.NUM_WB_GROUPS)-1:0] wb_group;
     } spec_table_t;
     spec_table_t translation [32];
     genvar i, j;
     generate  for (i = 0; i < 32; i++) begin : gen_reg_file_sim
-        for (j = 0; j < EXAMPLE_CONFIG.NUM_WB_GROUPS; j++) begin
+        for (j = 0; j < SIM_CONFIG.NUM_WB_GROUPS; j++) begin
             if (FPGA_VENDOR == XILINX) begin
                 assign translation[i] = cpu.renamer_block.spec_table_ram.xilinx_gen.ram[i];
                 assign sim_registers_unamed_groups[j][i] = 
@@ -430,7 +431,7 @@ module cva5_sim
     } fp_spec_table_t;
     fp_spec_table_t fp_translation [32];
 
-    generate if (EXAMPLE_CONFIG.INCLUDE_UNIT.FPU) begin : gen_fp_reg_file_sim
+    generate if (SIM_CONFIG.INCLUDE_UNIT.FPU) begin : gen_fp_reg_file_sim
         for (i = 0; i < 32; i++) begin
             for (j = 0; j < 2; j++) begin
                 if (FPGA_VENDOR == XILINX) begin
