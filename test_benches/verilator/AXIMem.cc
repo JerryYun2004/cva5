@@ -82,27 +82,47 @@ AXIMem::AXIMem(ifstream (&memFiles)[NUM_CORES], Vcva5_sim* tb) : AXIMem(tb) {
         memFiles[i].clear();
         memFiles[i].seekg(0, ios::beg);
 
-        //Then iterate over pages
-        while (!memFiles[i].eof()) {
-            if (fileIsHex) {
-                getline(memFiles[i], line_hex);
-                line_bin = stoul(line_hex, 0, 16);
-            }
-            else
-                memFiles[i].read((char*) &line_bin, 4);
+        // Then iterate over words
+        if (fileIsHex) {
+            while (std::getline(memFiles[i], line_hex)) {
+                // Skip empty lines
+                if (line_hex.empty()) continue;
 
-            uint32_t masked_addr = addr & addr_mask;
-            uint32_t* rdata;
-            try {
-                rdata = mem.at(addr >> ADDR_SHIFT_AMT);
-            } catch (out_of_range ex) {
-                rdata = new uint32_t[MEM_WORDS];
-                memset(rdata, 0, 4*MEM_WORDS);
-                mem[addr >> ADDR_SHIFT_AMT] = rdata;
+                // Strip Windows CR if present
+                if (!line_hex.empty() && line_hex.back() == '\r') line_hex.pop_back();
+                if (line_hex.empty()) continue;
+
+                line_bin = static_cast<uint32_t>(std::stoul(line_hex, nullptr, 16));
+
+                uint32_t masked_addr = addr & addr_mask;
+                uint32_t* rdata;
+                try {
+                    rdata = mem.at(addr >> ADDR_SHIFT_AMT);
+                } catch (out_of_range&) {
+                    rdata = new uint32_t[MEM_WORDS];
+                    memset(rdata, 0, 4*MEM_WORDS);
+                    mem[addr >> ADDR_SHIFT_AMT] = rdata;
+                }
+                rdata[masked_addr >> 2] = line_bin;
+                addr += 4;
             }
-            rdata[masked_addr>>2] = line_bin;
-            
-            addr += 4;
+        } else {
+            while (true) {
+                memFiles[i].read(reinterpret_cast<char*>(&line_bin), 4);
+                if (memFiles[i].gcount() != 4) break;
+
+                uint32_t masked_addr = addr & addr_mask;
+                uint32_t* rdata;
+                try {
+                    rdata = mem.at(addr >> ADDR_SHIFT_AMT);
+                } catch (out_of_range&) {
+                    rdata = new uint32_t[MEM_WORDS];
+                    memset(rdata, 0, 4*MEM_WORDS);
+                    mem[addr >> ADDR_SHIFT_AMT] = rdata;
+                }
+                rdata[masked_addr >> 2] = line_bin;
+                addr += 4;
+            }
         }
     }
 }

@@ -89,15 +89,21 @@ int main(int argc, char **argv) {
 
     // Tick the clock until we are done
     bool sig_phase_complete = false;
+    bool signature_switched = false;
+
     while(!(cva5Tracer->has_stalled() || cva5Tracer->has_terminated())) {
         cva5Tracer->tick();
         //Compliance Tests Signature Printing Phase
         sig_phase_complete |= cva5Tracer->check_if_instruction_retired(COMPLIANCE_SIG_PHASE_NOP);
-        if (sig_phase_complete && cva5Tracer->store_queue_empty()) {
+        if (!signature_switched &&
+            sig_phase_complete &&
+            cva5Tracer->store_queue_empty()) {
+
             std::cout << "\n--------------------------------------------------------------\n";
             std::cout << "                   Signature\n";
             std::cout << "--------------------------------------------------------------\n";
             cva5Tracer->set_log_file(&sigFile);
+            signature_switched = true;
         }
     }
 

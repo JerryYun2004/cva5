@@ -49,16 +49,27 @@ SimMem::SimMem(ifstream (&memFiles)[NUM_CORES]) {
         memFiles[i].clear();
         memFiles[i].seekg(0, ios::beg);
 
-        //Then iterate over pages
-        while (!memFiles[i].eof()) {
-            if (fileIsHex) {
-                getline(memFiles[i], line_hex);
-                line_bin = stoul(line_hex, 0, 16);
-            }
-            else
-                memFiles[i].read((char*) &line_bin, 4);
+        // Then iterate over words
+        if (fileIsHex) {
+            while (std::getline(memFiles[i], line_hex)) {
+                // Skip empty lines (and defensively skip whitespace-only lines)
+                if (line_hex.empty()) continue;
 
-            memory[addr++] = line_bin;
+                // Optional: strip a trailing '\r' if files ever come from Windows
+                if (!line_hex.empty() && line_hex.back() == '\r') line_hex.pop_back();
+
+                // If you want to allow comments later, you could ignore lines starting with '#'
+                // if (!line_hex.empty() && line_hex[0] == '#') continue;
+
+                line_bin = static_cast<uint32_t>(std::stoul(line_hex, nullptr, 16));
+                memory[addr++] = line_bin;
+            }
+        } else {
+            while (true) {
+                memFiles[i].read(reinterpret_cast<char*>(&line_bin), 4);
+                if (memFiles[i].gcount() != 4) break;
+                memory[addr++] = line_bin;
+            }
         }
     }
 }
